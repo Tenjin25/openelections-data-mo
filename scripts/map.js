@@ -285,4 +285,65 @@ function applyCategories() {
     }
 }
 
-// Continue with the rest of the functions in the next part...
+
+// Robust normalization for county name lookup
+function normalizeCountyName(name, lsad) {
+    // Remove periods, extra spaces, uppercase
+    let norm = name.replace(/\./g, '').replace(/\s+/g, ' ').trim().toUpperCase();
+    // Special handling for St. Louis City and County to match backend keys
+    if (norm === 'ST LOUIS' && (lsad === '25' || lsad === 'city')) {
+        return 'St. Louis City';
+    }
+    if (norm === 'ST LOUIS' && (lsad === '06' || lsad === 'county')) {
+        return 'St. Louis County';
+    }
+    // Fallback for direct matches to backend keys
+    if (norm === 'ST LOUIS COUNTY') {
+        return 'St. Louis County';
+    }
+    if (norm === 'ST LOUIS CITY') {
+        return 'St. Louis City';
+    }
+    // Other known exceptions can be added here if needed
+    // Title case for backend match (e.g., 'JACKSON' -> 'Jackson')
+    return norm.split(' ').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+}
+
+// Apply county-level categories/colors to the map
+function applyCountyCategories(results, contestType, year) {
+    // Assumes counties GeoJSON is loaded as a source named 'counties' and a layer named 'county-fills'
+    const mapSource = map.getSource('counties');
+    if (!mapSource) {
+        updateStatus('❌ County GeoJSON source not loaded!');
+        return;
+    }
+    // Get the GeoJSON data
+    const geojson = mapSource._data || mapSource._options?.data;
+    if (!geojson) {
+        updateStatus('❌ County GeoJSON data not available!');
+        return;
+    }
+
+    // For each feature, find the normalized county name and match to results
+    geojson.features.forEach(feature => {
+        const props = feature.properties;
+        const countyNorm = normalizeCountyName(props.NAME20, props.LSAD20);
+        // Try direct match
+        let result = results[countyNorm];
+        // If not found, try fallback for known issues (e.g., St. Louis City/County, St. counties)
+        if (!result && countyNorm.startsWith('ST ')) {
+            // Try with/without "SAINT" if needed in future
+            // (Not needed for MO, but can add if data changes)
+        }
+        // If still not found, log for debugging
+        if (!result) {
+            console.warn('No result for county:', props.NAME20, '| normalized:', countyNorm);
+        }
+        // Set feature state for coloring (or fallback)
+        map.setFeatureState(
+            { source: 'counties', id: props.GEOID20 },
+            { category: result ? result.category : 'missing', winner: result ? result.winner : null }
+        );
+    });
+    updateStatus('✅ County categories applied.');
+}
