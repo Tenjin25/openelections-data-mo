@@ -174,12 +174,15 @@ for csv_file in csv_files:
     if 'county' not in df_filtered.columns:
         continue
     for office in df_filtered['office'].unique():
-        office_df = df_filtered[df_filtered['office'] == office]
+        office_df = df_filtered[df_filtered['office'] == office].copy()
+        
+        # Remap 'Kansas City' to 'Jackson' before processing
+        office_df.loc[office_df['county'].str.upper().str.contains('KANSAS CITY', na=False), 'county'] = 'Jackson'
+        
+        # Re-aggregate after remapping to combine Jackson + Kansas City
+        office_df = office_df.groupby(['county', 'office', 'party', 'candidate'], as_index=False)['votes'].sum()
+        
         for county in office_df['county'].unique():
-            # Special handling for 'KANSAS CITY' - treat as Jackson County only
-            # (KCEB only covers KC within Jackson County; Clay/Platte/Cass KC portions reported by their respective counties)
-            if normalize_county_key(county) == normalize_county_key('KANSAS CITY'):
-                county = 'Jackson'  # Remap to Jackson County
             # Normal county logic
             official_county = get_official_county_name(county)
             if not official_county:
