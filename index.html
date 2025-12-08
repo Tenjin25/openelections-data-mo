@@ -3104,12 +3104,23 @@ function filterValidContests(contests) {
       
       // countyName from GeoJSON is "Boone County", "St. Louis city", etc.
       // Election data has "Boone", "St. Louis City", "St. Louis County"
-      // Need to strip suffix and normalize
-      let lookupName = countyName.replace(/ County$/i, '').replace(/ city$/i, ' City');
+      // Try multiple lookup variations
+      let result = null;
       
-      const result = currentContest.data[lookupName] || 
-                   currentContest.data[lookupName.toUpperCase()] ||
-                   currentContest.data[countyName];
+      // First try exact match (handles "St. Louis County")
+      result = currentContest.data[countyName];
+      
+      // If not found, try normalizing "city" to "City" (handles "St. Louis city" -> "St. Louis City")
+      if (!result) {
+        const normalized = countyName.replace(/ city$/i, ' City');
+        result = currentContest.data[normalized];
+      }
+      
+      // If not found, try stripping " County" suffix (handles "Boone County" -> "Boone")
+      if (!result && countyName.endsWith(' County')) {
+        const stripped = countyName.replace(/ County$/i, '');
+        result = currentContest.data[stripped];
+      }
       
       if (!result) {
         sidebarContent.innerHTML = `<h4>${countyName}</h4><p>No data available for this contest.</p>`;
