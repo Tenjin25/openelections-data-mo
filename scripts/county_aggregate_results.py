@@ -135,19 +135,18 @@ def normalize_candidate_name(name):
 
 # List all relevant CSVs
 csv_files = [
-    "20241105__mo__general__precinct.csv",
-    "20001107__mo__general.csv",
     "20001107__mo__general__precinct.csv",
-    "20021105__mo__general.csv",
-    "20041102__mo__general.csv",
-    "20061107__mo__general.csv",
-    "20081104__mo__general.csv",
-    "20101102__mo__general.csv",
-    "20121106__mo__general.csv",
-    "20141104__mo__general.csv",
+    "20021105__mo__general__precinct.csv",
+    "20041102__mo__general__precinct.csv",
+    "20061107__mo__general__precinct.csv",
+    "20081104__mo__general__precinct.csv",
+    "20101102__mo__general__precinct.csv",
+    "20121106__mo__general__precinct.csv",
+    "20141104__mo__general__precinct.csv",
     "20161108__mo__general__precinct.csv",
     "20181106__mo__general__precinct.csv",
-    "20201103__mo__general__precinct.csv"
+    "20201103__mo__general__precinct.csv",
+    "20241105__mo__general__precinct.csv"
 ]
 all_years = set()
 all_contests = set()
@@ -157,17 +156,40 @@ results_by_year = defaultdict(lambda: defaultdict(dict))
 for csv_file in csv_files:
     csv_path = os.path.join(DATA_DIR, csv_file)
     df = pd.read_csv(csv_path, dtype=str)
+    
+    # Normalize column names to lowercase for consistency
+    df.columns = df.columns.str.lower()
+    
+    # Create 'candidate' column if it doesn't exist (combine first/last name or use existing)
+    if 'candidate' not in df.columns:
+        if 'first_name' in df.columns and 'last_name' in df.columns:
+            df['candidate'] = (df['first_name'].fillna('') + ' ' + df['last_name'].fillna('')).str.strip()
+        elif 'first name' in df.columns and 'last name' in df.columns:
+            df['candidate'] = (df['first name'].fillna('') + ' ' + df['last name'].fillna('')).str.strip()
+        else:
+            df['candidate'] = ''
+    
     exclude_keywords = [
         'Constitutional Amendment', 'Proposition', 'US House', 'U.S. House', 'State House', 'State Senate', 'State Senator', 'Circuit Court Judge', 'Circuit Judge'
     ]
     # Only include rows where office does NOT contain any exclude_keywords
     mask = ~df['office'].str.contains('|'.join(exclude_keywords), case=False, na=False)
-    df_filtered = df[mask] if 'office' in df.columns else df
+    df_filtered = df[mask].copy() if 'office' in df.columns else df.copy()
     # Extract only the year (first 4 digits)
     year = csv_file[:4]
     all_years.add(year)
     # Aggregate precinct-level files to county-level
     if 'precinct' in df_filtered.columns:
+        # Fill NaN values before groupby
+        df_filtered['party'] = df_filtered['party'].fillna('')
+        df_filtered['candidate'] = df_filtered['candidate'].fillna('')
+        
+        # Remap Kansas City to Jackson BEFORE aggregation
+        kc_count = df_filtered[df_filtered['county'].str.upper().str.contains('KANSAS CITY', na=False)].shape[0]
+        if kc_count > 0:
+            print(f"  Remapping {kc_count} Kansas City rows to Jackson in {year}")
+        df_filtered.loc[df_filtered['county'].str.upper().str.contains('KANSAS CITY', na=False), 'county'] = 'Jackson'
+        
         # Group by county, office, party, candidate and sum votes
         df_filtered.loc[:, 'votes'] = df_filtered['votes'].astype(float)
         df_filtered = df_filtered.groupby(['county', 'office', 'party', 'candidate'], as_index=False)['votes'].sum()
