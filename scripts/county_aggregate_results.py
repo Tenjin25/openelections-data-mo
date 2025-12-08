@@ -160,14 +160,22 @@ for csv_file in csv_files:
     # Normalize column names to lowercase for consistency
     df.columns = df.columns.str.lower()
     
-    # Create 'candidate' column if it doesn't exist (combine first/last name or use existing)
-    if 'candidate' not in df.columns:
+    # Create 'candidate' column if it doesn't exist or is empty (combine first/last name)
+    if 'candidate' not in df.columns or df['candidate'].fillna('').str.strip().eq('').all():
         if 'first_name' in df.columns and 'last_name' in df.columns:
-            df['candidate'] = (df['first_name'].fillna('') + ' ' + df['last_name'].fillna('')).str.strip()
+            df['candidate'] = (df['last_name'].fillna('') + ' ' + df['first_name'].fillna('')).str.strip()
         elif 'first name' in df.columns and 'last name' in df.columns:
-            df['candidate'] = (df['first name'].fillna('') + ' ' + df['last name'].fillna('')).str.strip()
+            df['candidate'] = (df['last name'].fillna('') + ' ' + df['first name'].fillna('')).str.strip()
         else:
             df['candidate'] = ''
+    else:
+        # Candidate column exists but may have some empty values - fill those from first/last name
+        mask = df['candidate'].fillna('').str.strip().eq('')
+        if mask.any():
+            if 'first_name' in df.columns and 'last_name' in df.columns:
+                df.loc[mask, 'candidate'] = (df.loc[mask, 'last_name'].fillna('') + ' ' + df.loc[mask, 'first_name'].fillna('')).str.strip()
+            elif 'first name' in df.columns and 'last name' in df.columns:
+                df.loc[mask, 'candidate'] = (df.loc[mask, 'last name'].fillna('') + ' ' + df.loc[mask, 'first name'].fillna('')).str.strip()
     
     exclude_keywords = [
         'Constitutional Amendment', 'Proposition', 'US House', 'U.S. House', 'State House', 'State Senate', 'State Senator', 'Circuit Court Judge', 'Circuit Judge'
@@ -188,7 +196,7 @@ for csv_file in csv_files:
         kc_count = df_filtered[df_filtered['county'].str.upper().str.contains('KANSAS CITY', na=False)].shape[0]
         if kc_count > 0:
             print(f"  Remapping {kc_count} Kansas City rows to Jackson in {year}")
-        df_filtered.loc[df_filtered['county'].str.upper().str.contains('KANSAS CITY', na=False), 'county'] = 'Jackson'
+        df_filtered.loc[df_filtered['county'].str.upper().str.contains('KANSAS CITY', na=False), 'county'] = 'JACKSON'
         
         # Group by county, office, party, candidate and sum votes
         df_filtered.loc[:, 'votes'] = df_filtered['votes'].astype(float)
