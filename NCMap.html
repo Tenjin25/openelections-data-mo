@@ -159,10 +159,10 @@
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <meta charset='utf-8'>
-  <title>Missouri Political Realignment Map (2000-2024)</title>
+  <title>NC Political Realignment Map (2000-2024)</title>
   <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'>
-  <meta property="og:title" content="Missouri Political Realignment Map (2000-2024)">
-  <meta property="og:description" content="Interactive visualization of Missouri's political trends from 2000 to 2024, showing county-level voting patterns.">
+  <meta property="og:title" content="NC Political Realignment Map (2000-2024)">
+  <meta property="og:description" content="Interactive visualization of North Carolina's political trends from 2000 to 2024, showing county-level voting patterns.">
   <meta property="og:image" content="preview.png">
   <meta name="twitter:card" content="summary_large_image">
     <link href='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css' rel='stylesheet'>
@@ -803,7 +803,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <label for="county-search" style="font-weight:600;">Search County:</label>
           <input type="text" id="county-search" placeholder="Type county name..." autocomplete="off" spellcheck="false" style="width:100%;padding:8px;border-radius:6px;margin-top:6px;margin-bottom:6px;border:1px solid #d1d5db;" />
         </div>
-        <h4 id="statewide">🏛️ Missouri Statewide</h4>
+        <h4 id="statewide">🏛️ North Carolina Statewide</h4>
   <div style="margin:18px 0 8px 0; border-bottom:2px solid #e5e7eb;"></div>
    <div class="statewide-results" id="statewide-results">
   <h4 id="contest-name" style="margin:0 0 15px 0; font-size:16px; font-weight:700; color:#1f2937;"></h4>
@@ -916,12 +916,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const CONFIG = {
       mapboxToken: 'pk.eyJ1Ijoic2hhbWFyZGF2aXMiLCJhIjoiY21kcW8yeDB2MDhvbTJzb29qeGp1aDZmZCJ9.Zw_i6U-dL7_bEKRHTUh7yg',
       paths: {
-        counties: 'VTDs/tl_2020_29_county20.geojson',
-        election: './Data/mo_county_aggregated_results.json'
+        counties: './data/tl_2020_37_county20.geojson',
+        election: './data/county_level_election_results_2000_2024.json'
       },
-      center: [-92.5, 38.5], // Missouri center
-      zoom: 6.2,
-      fitBounds: [[-95.8, 35.9], [-89.1, 40.6]]
+      center: [-79.0, 35.5], // North Carolina center
+      zoom: 6.5,
     };
 
     mapboxgl.accessToken = CONFIG.mapboxToken;
@@ -1829,7 +1828,7 @@ function toggleSidebar() {
       const year = currentContest.year;
       // Remove TN contests from sidebar display
       if ((contestName && contestName.toUpperCase().includes('TN')) || (currentContest.category && currentContest.category.toUpperCase().includes('TN'))) {
-        contentEl.innerHTML = '<p>This contest is not available for Missouri county analysis.</p>';
+        contentEl.innerHTML = '<p>This contest is not available for North Carolina county analysis.</p>';
         detailsDiv.style.display = 'block';
         return;
       }
@@ -2987,7 +2986,7 @@ function filterValidContests(contests) {
         if (isTN) {
           // Skip NC-specific coloring and statewide aggregation for Tennessee contests
           if (contestNameEl) contestNameEl.textContent = '';
-          if (statewideContent) statewideContent.innerHTML = '<p>This contest is not available for Missouri county/statewide analysis.</p>';
+          if (statewideContent) statewideContent.innerHTML = '<p>This contest is not available for North Carolina county/statewide analysis.</p>';
         } else {
           // NC contest: update map colors and compute statewide totals
           updateMapColors();
