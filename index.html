@@ -1227,7 +1227,8 @@ function mergeGeoElectionData(boundaryGeoJSON, electionData, countyKey='County',
             }
             sortedContests.forEach(item => {
               const o = document.createElement('option');
-              o.value = `${item.year}||${item.cat}||${item.contestKey}`;
+              // Missouri structure: year||contestKey (no category level)
+              o.value = `${item.year}||${item.contestKey}`;
               let displayName = `${officeLabel} (${item.year})`;
               if (item.contestName && !officeLabel.includes(item.contestName)) {
                 displayName = `${item.contestName} (${item.year})`;
@@ -1245,16 +1246,28 @@ function mergeGeoElectionData(boundaryGeoJSON, electionData, countyKey='County',
     // Parse the encoded option value and load the selected contest into currentContest
     function handleContestSelect(encoded) {
       const parts = (encoded || '').split('||');
-      if (parts.length < 3) return;
-      const [year, cat, contestKey] = parts;
-      if (!electionData || !electionData.results_by_year || !electionData.results_by_year[year] || !electionData.results_by_year[year][cat]) {
+      if (parts.length < 2) return;
+      
+      // Missouri structure: year||contestKey (no category)
+      const [year, contestKey] = parts;
+      
+      if (!electionData || !electionData.results_by_year || !electionData.results_by_year[year] || !electionData.results_by_year[year][contestKey]) {
         console.warn('Selected contest not found in electionData:', parts);
         return;
       }
-      const contestObj = electionData.results_by_year[year][cat][contestKey];
-      if (!contestObj) { console.warn('Contest object missing for', parts); return; }
+      
+      const contestData = electionData.results_by_year[year][contestKey];
+      if (!contestData) { 
+        console.warn('Contest data missing for', parts); 
+        return; 
+      }
 
-      currentContest = { year, category: cat, key: contestKey, data: contestObj };
+      currentContest = { 
+        year, 
+        contestType: contestKey,  // Use contestKey as contestType for Missouri
+        key: contestKey, 
+        data: contestData 
+      };
 
       // Try to reuse existing applyContest/applyCountyContest/updateMapColors logic
       if (typeof applyContest === 'function') {
@@ -1443,11 +1456,12 @@ function mergeGeoElectionData(boundaryGeoJSON, electionData, countyKey='County',
       let repCandidate = currentContest?.data?.rep_candidate || '';
       // If contest-level candidate names are missing, derive the most common
       // dem/rep candidate name from county-level results (frequency heuristic).
-      if ((!demCandidate || !repCandidate) && currentContest && currentContest.data && currentContest.data.results) {
+      if ((!demCandidate || !repCandidate) && currentContest && currentContest.data) {
         const demCounts = Object.create(null);
         const repCounts = Object.create(null);
         try {
-          Object.values(currentContest.data.results).forEach(cd => {
+          // Missouri structure: counties directly in currentContest.data
+          Object.values(currentContest.data).forEach(cd => {
             if (!cd || typeof cd !== 'object') return;
             const d = (cd.dem_candidate || cd.dem || '').toString().trim();
             const r = (cd.rep_candidate || cd.rep || cd.republican || '').toString().trim();
@@ -1744,21 +1758,24 @@ function toggleSidebar() {
       let sidebarContent = '';
       
       // Guard: check if we have a selected contest and election data
-      if (!currentContest || !currentContest.data || !currentContest.data.results) {
+      if (!currentContest || !currentContest.data) {
         contentEl.innerHTML = '<p>Select a contest to see county results.</p>';
         detailsDiv.style.display = 'block';
         return;
       }
       
+      // Missouri structure: counties are directly in currentContest.data
+      const countyResults = currentContest.data;
+      
       // Normalize county name and find county data
       const normalizedCountyName = countyName.toUpperCase().replace(/_/g, ' ');
-      let countyData = currentContest.data.results[normalizedCountyName];
+      let countyData = countyResults[normalizedCountyName];
       
       if (!countyData) {
         // Try to find with different name variations
-        for (const key in currentContest.data.results) {
+        for (const key in countyResults) {
           if (key.toUpperCase().replace(/_/g, ' ') === normalizedCountyName) {
-            countyData = currentContest.data.results[key];
+            countyData = countyResults[key];
             break;
           }
         }
@@ -1770,11 +1787,11 @@ function toggleSidebar() {
       }
       
       // Get contest info from the current contest
-      const contestName = currentContest.data.contest_name || 'Contest';
+      const contestName = countyData.contest || currentContest.contestType || 'Contest';
       const year = currentContest.year;
-      // Remove TN contests from sidebar display
+      // Skip Tennessee contests
       if ((contestName && contestName.toUpperCase().includes('TN')) || (currentContest.category && currentContest.category.toUpperCase().includes('TN'))) {
-        contentEl.innerHTML = '<p>This contest is not available for North Carolina county analysis.</p>';
+        contentEl.innerHTML = '<p>This contest is not available for county analysis.</p>';
         detailsDiv.style.display = 'block';
         return;
       }
@@ -1801,11 +1818,12 @@ function toggleSidebar() {
       let demCandidate = currentContest?.data?.dem_candidate || '';
       let repCandidate = currentContest?.data?.rep_candidate || '';
       // If contest-level names are missing, derive from the contest's county results by frequency
-      if ((!demCandidate || !repCandidate) && currentContest && currentContest.data && currentContest.data.results) {
+      if ((!demCandidate || !repCandidate) && currentContest && currentContest.data) {
         const demCounts = Object.create(null);
         const repCounts = Object.create(null);
         try {
-          Object.values(currentContest.data.results).forEach(cd => {
+          // Missouri structure: counties directly in currentContest.data
+          Object.values(currentContest.data).forEach(cd => {
             if (!cd || typeof cd !== 'object') return;
             const d = (cd.dem_candidate || cd.dem || '').toString().trim();
             const r = (cd.rep_candidate || cd.rep || cd.republican || '').toString().trim();
@@ -2888,11 +2906,11 @@ function filterValidContests(contests) {
         try {
           let year, contestType, contestId;
           if (value.includes('||')) {
-            // New format: year||cat||contestKey
+            // Missouri format: year||contestKey (no category level)
             const parts = value.split('||');
             year = parts[0];
-            contestType = parts[1];
-            contestId = parts[2];
+            contestType = parts[1];  // contestKey IS the contestType
+            contestId = parts[1];     // Same as contestType for Missouri
           } else {
             // Old format: year-contestType-contestId
             const parts = value.split('-');
@@ -2901,9 +2919,9 @@ function filterValidContests(contests) {
             contestId = parts[2];
           }
 
-          // Defensive checks for nested election data
-          if (!electionData || !electionData.results_by_year || !electionData.results_by_year[year] || !electionData.results_by_year[year][contestType] || !electionData.results_by_year[year][contestType][contestId]) {
-            console.warn('Selected contest not found in electionData for', { year, contestType, contestId });
+          // Missouri structure: results_by_year[year][contestName][countyName]
+          if (!electionData || !electionData.results_by_year || !electionData.results_by_year[year] || !electionData.results_by_year[year][contestType]) {
+            console.warn('Selected contest not found in electionData for', { year, contestType });
             currentContest = null;
             setStatus('Selected contest data not available');
             return;
@@ -2913,7 +2931,7 @@ function filterValidContests(contests) {
             year,
             contestType,
             contestId,
-            data: electionData.results_by_year[year][contestType][contestId]
+            data: electionData.results_by_year[year][contestType]
           };
         } catch (err) {
           console.error('Error parsing contest selection value:', value, err);
@@ -2955,7 +2973,7 @@ function filterValidContests(contests) {
     }
 
    function updateMapColors() {
-  if (!currentContest || !currentContest.data.results) {
+  if (!currentContest || !currentContest.data) {
     return;
   }
 
@@ -2971,7 +2989,8 @@ function filterValidContests(contests) {
     const colorExpression = ['case'];
     let matchCount = 0;
 
-  Object.entries(currentContest.data.results).forEach(([countyName, result]) => {
+  // Missouri structure: counties directly in currentContest.data
+  Object.entries(currentContest.data).forEach(([countyName, result]) => {
       if (!countyName || countyName === 'undefined' || typeof countyName !== 'string') return;
       const competitiveness = result.competitiveness;
       if (competitiveness && competitiveness.color) {
@@ -3012,7 +3031,7 @@ function filterValidContests(contests) {
   }
 }
     function calculateAndUpdateStatewideResults() {
-      if (!currentContest || !currentContest.data.results) {
+      if (!currentContest || !currentContest.data) {
         return;
       }
 
@@ -3022,7 +3041,8 @@ function filterValidContests(contests) {
       let totalOtherVotes = 0;
       let totalVotes = 0;
 
-      Object.values(currentContest.data.results).forEach(county => {
+      // Missouri structure: counties directly in currentContest.data
+      Object.values(currentContest.data).forEach(county => {
         totalDemVotes += county.dem_votes || 0;
         totalRepVotes += county.rep_votes || 0;
         totalOtherVotes += county.other_votes || 0;
@@ -3069,10 +3089,11 @@ function filterValidContests(contests) {
         return;
       }
       const countyNameUpper = countyName.toUpperCase();
-      const result = currentContest.data.results[countyNameUpper] || 
-                   currentContest.data.results[countyName] ||
-                   currentContest.data.results[`${countyName} County`] ||
-                   currentContest.data.results[`${countyNameUpper} COUNTY`];
+      // Missouri structure: counties directly in currentContest.data
+      const result = currentContest.data[countyNameUpper] || 
+                   currentContest.data[countyName] ||
+                   currentContest.data[`${countyName} County`] ||
+                   currentContest.data[`${countyNameUpper} COUNTY`];
       
       if (!result) {
         sidebarContent.innerHTML = `<h4>${countyName} County</h4><p>No data available for this contest.</p>`;
