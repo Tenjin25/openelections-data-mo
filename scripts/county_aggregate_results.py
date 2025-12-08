@@ -195,11 +195,14 @@ for csv_file in csv_files:
         df_filtered['party'] = df_filtered['party'].fillna('')
         df_filtered['candidate'] = df_filtered['candidate'].fillna('')
         
+        # Normalize all county names to title case for consistency
+        df_filtered['county'] = df_filtered['county'].str.title()
+        
         # Remap Kansas City to Jackson BEFORE aggregation
-        kc_count = df_filtered[df_filtered['county'].str.upper().str.contains('KANSAS CITY', na=False)].shape[0]
+        kc_count = df_filtered[df_filtered['county'].str.contains('Kansas City', case=False, na=False)].shape[0]
         if kc_count > 0:
             print(f"  Remapping {kc_count} Kansas City rows to Jackson in {year}")
-        df_filtered.loc[df_filtered['county'].str.upper().str.contains('KANSAS CITY', na=False), 'county'] = 'JACKSON'
+        df_filtered.loc[df_filtered['county'].str.contains('Kansas City', case=False, na=False), 'county'] = 'Jackson'
         
         # Group by county, office, party, candidate and sum votes
         df_filtered.loc[:, 'votes'] = df_filtered['votes'].astype(float)
