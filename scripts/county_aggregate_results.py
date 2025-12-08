@@ -145,7 +145,7 @@ csv_files = [
     "20101102__mo__general.csv",
     "20121106__mo__general.csv",
     "20141104__mo__general.csv",
-    "20161108__mo__general__county.csv",
+    "20161108__mo__general__precinct.csv",
     "20181106__mo__general__precinct.csv",
     "20201103__mo__general__precinct.csv"
 ]
@@ -176,8 +176,15 @@ for csv_file in csv_files:
     for office in df_filtered['office'].unique():
         office_df = df_filtered[df_filtered['office'] == office].copy()
         
+        # Fill NaN values before processing
+        office_df['party'] = office_df['party'].fillna('')
+        office_df['candidate'] = office_df['candidate'].fillna('')
+        
         # Remap 'Kansas City' to 'Jackson' before processing
         office_df.loc[office_df['county'].str.upper().str.contains('KANSAS CITY', na=False), 'county'] = 'Jackson'
+        
+        # Convert votes to float before groupby
+        office_df.loc[:, 'votes'] = office_df['votes'].astype(float)
         
         # Re-aggregate after remapping to combine Jackson + Kansas City
         office_df = office_df.groupby(['county', 'office', 'party', 'candidate'], as_index=False)['votes'].sum()
@@ -186,7 +193,6 @@ for csv_file in csv_files:
             # Normal county logic
             official_county = get_official_county_name(county)
             if not official_county:
-                print(f"Skipping invalid county: {county}")
                 continue
             county_df = office_df[office_df['county'] == county].copy()
             county_df['party'] = county_df['party'].fillna('')
@@ -249,7 +255,6 @@ output_json["summary"] = {
 }
 # Sort results_by_year chronologically
 output_json["results_by_year"] = {year: results_by_year[year] for year in sorted(results_by_year.keys())}
-print(f"Years in results_by_year before writing: {sorted(results_by_year.keys())}")
 
 with open(OUTPUT_PATH, 'w', encoding='utf-8') as f:
     json.dump(output_json, f, ensure_ascii=False, indent=2)

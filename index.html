@@ -976,6 +976,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // Normalize and find county data
       function normalizeCountyName(name) {
         return (name || '')
+          .replace(/ County$/i, '')  // Remove " County" suffix
+          .replace(/ city$/i, '')    // Remove " city" suffix
           .replace(/^saint /i, 'st ')
           .replace(/^st\.? /i, 'st ')
           .replace(/\bsaint\b/gi, 'st')
