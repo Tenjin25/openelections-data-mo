@@ -205,6 +205,10 @@ for csv_file in csv_files:
             total_votes = dem_votes + rep_votes + other_votes
             two_party_total = dem_votes + rep_votes
             margin = abs(rep_votes - dem_votes)
+            # Calculate percentages based on total votes (not just two-party)
+            dem_pct = round(dem_votes / total_votes * 100, 2) if total_votes > 0 else None
+            rep_pct = round(rep_votes / total_votes * 100, 2) if total_votes > 0 else None
+            # Calculate margin as percentage of two-party total
             margin_pct = round(margin / two_party_total * 100, 2) if two_party_total > 0 else None
             margin_pct_str = f"{margin_pct:.2f}" if margin_pct is not None else None
             winner = 'REP' if rep_votes > dem_votes else ('DEM' if dem_votes > rep_votes else 'TIE')
@@ -237,6 +241,8 @@ for csv_file in csv_files:
                 "rep_candidate": rep_candidate,
                 "dem_votes": int(dem_votes),
                 "rep_votes": int(rep_votes),
+                "dem_pct": dem_pct,
+                "rep_pct": rep_pct,
                 "other_votes": int(other_votes),
                 "total_votes": int(total_votes),
                 "two_party_total": int(two_party_total),
