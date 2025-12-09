@@ -190,6 +190,21 @@ for csv_file in csv_files:
     # Extract only the year (first 4 digits)
     year = csv_file[:4]
     all_years.add(year)
+    
+    # Manual party mappings for races where party data is missing in source files
+    party_mappings = {
+        '2018': {
+            'Nicole Galloway': 'DEM',
+            'Saundra McDowell': 'REP'
+        }
+    }
+    
+    # Apply party mappings if year and candidate match
+    if year in party_mappings:
+        for candidate_name, party in party_mappings[year].items():
+            mask = df_filtered['candidate'].str.contains(candidate_name, case=False, na=False)
+            df_filtered.loc[mask, 'party'] = party
+    
     # Aggregate precinct-level files to county-level
     if 'precinct' in df_filtered.columns:
         # Fill NaN values before groupby
