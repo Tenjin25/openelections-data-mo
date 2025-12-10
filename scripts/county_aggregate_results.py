@@ -209,8 +209,10 @@ for csv_file in csv_files:
     name_corrections = {
         'Jeremiah W Jay Nixon': 'Jay Nixon',
         'Jeremiah W. (Jay) Nixon': 'Jay Nixon',
+        'Jeremiah Nixon': 'Jay Nixon',
         'Christopher Bond': 'Kit Bond',
-        'Christopher S. Bond': 'Kit Bond'
+        'Christopher S. Bond': 'Kit Bond',
+        'David Dave Spence': 'Dave Spence'
     }
     
     for old_name, new_name in name_corrections.items():
