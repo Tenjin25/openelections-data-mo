@@ -1762,8 +1762,11 @@ function toggleSidebar() {
         const btn = document.getElementById('sidebar-minimize-btn');
         if (btn) btn.textContent = '−';
       }
+      // Normalize display name: "St. Louis city" -> "St. Louis City"
+      let displayName = countyName.replace(/ city$/i, ' City');
+      
       const countyNameElement = document.getElementById('county-name');
-      if (countyNameElement) countyNameElement.textContent = countyName;
+      if (countyNameElement) countyNameElement.textContent = displayName;
       let sidebarContent = '';
       
       // Guard: check if we have a selected contest and election data
