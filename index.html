@@ -3659,7 +3659,10 @@ function handleCountySelection(countyName) {
 
     if (found) {
       const props = found.properties || {};
-      lastSelectedCounty = props.NAME20 || props.NAMELSAD20 || props.county_name || props.County || props.COUNTYNAME || props.NAME || props.name;
+      // Use NAMELSAD20 first (has full name like "St. Louis County") instead of NAME20 (just "St. Louis")
+      lastSelectedCounty = props.NAMELSAD20 || props.NAME20 || props.county_name || props.County || props.COUNTYNAME || props.NAME || props.name;
+      // Normalize "St. Louis city" to "St. Louis City" for display
+      lastSelectedCounty = lastSelectedCounty.replace(/ city$/i, ' City');
       const bbox = turf.bbox(found);
       console.log('[DIAGNOSTIC] Matched county for', countyName, '->', lastSelectedCounty, 'bbox:', bbox);
       map.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 40, duration: 1000 });
