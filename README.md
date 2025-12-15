@@ -30,13 +30,13 @@ Proprietary nine-tier competitiveness classification system based on two-party v
 | Tier | Margin Range | Description |
 |------|-------------|-------------|
 | **Annihilation** | ≥40% | Complete partisan dominance, no meaningful opposition |
-| **Dominant** | 30-40% | Overwhelming majority, occasional token opposition |
-| **Stronghold** | 20-30% | Strong partisan advantage, consistent victories |
-| **Safe** | 10-20% | Reliable wins, limited competitiveness |
-| **Likely** | 5.5-10% | Leans partisan but winnable by opposition |
-| **Lean** | 1-5.5% | Slight advantage, genuinely competitive |
-| **Tilt** | 0.5-1% | Extremely close, could flip with small changes |
-| **Tossup** | <0.5% | Essential tie, recount-level margins |
+| **Dominant** | 30.00-39.99% | Overwhelming majority, occasional token opposition |
+| **Stronghold** | 20.00-39.99% | Strong partisan advantage, consistent victories |
+| **Safe** | 10.00-19.99% | Reliable wins, limited competitiveness |
+| **Likely** | 5.50-9.99% | Leans partisan but winnable by opposition |
+| **Lean** | 1.00-5.49% | Slight advantage, genuinely competitive |
+| **Tilt** | 0.50-0.99% | Extremely close, could flip with small changes |
+| **Tossup** | <0.50% | Essential tie, recount-level margins |
 
 Each tier has distinct color coding (Democratic blue scale, Republican red scale) with intensity corresponding to margin size.
 
