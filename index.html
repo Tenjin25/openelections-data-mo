@@ -3507,6 +3507,7 @@ function setupCountySearch() {
       if (a === 'St. Louis City' && b === 'St. Louis County') return 1;
       return a.localeCompare(b);
     });
+    console.log('Available counties:', counties.filter(c => c.includes('St. Louis')));
   }
   
   const searchInput = document.getElementById('county-search');
@@ -3544,14 +3545,14 @@ function setupCountySearch() {
         dropdown.style.display = 'none';
         return;
       }
-      // Normalize and match county names
-      const matches = counties.filter(county => county.toLowerCase().includes(searchValue)).slice(0, 10);
+      // Normalize and match county names - show up to 15 matches
+      const matches = counties.filter(county => county.toLowerCase().includes(searchValue)).slice(0, 15);
       if (matches.length > 0) {
         dropdown.innerHTML = matches.map(county => `
           <div style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f3f4f6;" 
                onmouseover="this.style.backgroundColor='#f3f4f6'" 
                onmouseout="this.style.backgroundColor='white'"
-               onclick="selectCounty('${county}')">${county}</div>
+               onclick="selectCounty('${county.replace(/'/g, "\\'")}')">${county}</div>
         `).join('');
         dropdown.style.display = 'block';
       } else {
