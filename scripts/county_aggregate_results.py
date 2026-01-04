@@ -118,7 +118,16 @@ def normalize_candidate_name(name):
     if not name:
         return ''
     name = name.replace('"', '').strip()
-    # If name is in 'Last, First (Nickname)' format, convert to 'First Last'
+    
+    # Handle presidential tickets (e.g., "George W. Bush, Dick Cheney" -> "George W. Bush")
+    # Keep only the first name (presidential candidate, not VP)
+    if ',' in name:
+        parts = name.split(',')
+        # For presidential tickets, take the first part (the president)
+        name = parts[0].strip()
+    
+    # If name is in 'Last, First (Nickname)' format, it would have been split above
+    # So this regex won't match presidential tickets anymore
     match = re.match(r'^(\w+),\s*([\w\-]+)(?:\s*\(([^)]+)\))?', name)
     if match:
         first = match.group(2)
@@ -128,6 +137,7 @@ def normalize_candidate_name(name):
             name = f"{first} ({nickname}) {last}"
         else:
             name = f"{first} {last}"
+    
     # Remove extra spaces and punctuation except for nickname
     name = re.sub(r'\s+', ' ', name)
     name = re.sub(r'[.,()]', '', name)
@@ -162,12 +172,26 @@ for csv_file in csv_files:
     df.columns = df.columns.str.lower()
     
     # Create 'candidate' column if it doesn't exist or is empty (combine first/last name)
-    # Format: "FirstName LastName" (not "LastName FirstName")
     if 'candidate' not in df.columns or df['candidate'].fillna('').str.strip().eq('').all():
         if 'first_name' in df.columns and 'last_name' in df.columns:
+            # Combine first_name + last_name for all races
             df['candidate'] = (df['first_name'].fillna('') + ' ' + df['last_name'].fillna('')).str.strip()
         elif 'first name' in df.columns and 'last name' in df.columns:
-            df['candidate'] = (df['first name'].fillna('') + ' ' + df['last name'].fillna('')).str.strip()
+            # For 2000-2004 presidential races: "last name" has full president name (e.g., "Al Gore")
+            # and "first name" has VP name (e.g., "Joe Lieberman")
+            # For those races, just use "last name" (the president)
+            # For other races, combine normally
+            is_pres = df['office'].str.contains('President', case=False, na=False)
+            # Check if last name looks like a full name (has a space in it)
+            last_has_space = df['last name'].str.contains(' ', na=False)
+            
+            # Use only "last name" if it's a presidential race AND last name contains a space (full name)
+            # Otherwise combine first + last normally
+            df['candidate'] = df.apply(
+                lambda row: row['last name'].strip() if pd.notna(row['last name']) and is_pres.loc[row.name] and last_has_space.loc[row.name]
+                else (str(row['first name']) + ' ' + str(row['last name'])).strip() if pd.notna(row['first name']) and pd.notna(row['last name'])
+                else '', axis=1
+            )
         else:
             df['candidate'] = ''
     else:
