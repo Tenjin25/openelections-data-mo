@@ -9,7 +9,7 @@ import re
 import csv
 
 pdf_path = "2022/2022_results.pdf"
-output_csv = "2022/20221108__mo__general__precinct.csv"
+output_csv = "2022/20221108__mo__general__county_full.csv"
 
 print(f"Opening PDF: {pdf_path}")
 
