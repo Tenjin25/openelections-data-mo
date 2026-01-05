@@ -312,13 +312,17 @@ for csv_file in csv_files:
             # Candidate selection: filter out missing/empty candidate names
             dem_candidates = county_df[dem_mask & county_df['candidate'].notna() & (county_df['candidate'] != '')]
             if not dem_candidates.empty:
-                dem_candidate = normalize_candidate_name(dem_candidates.sort_values('votes', ascending=False)['candidate'].iloc[0])
+                dem_candidate_raw = dem_candidates.sort_values('votes', ascending=False)['candidate'].iloc[0]
+                dem_candidate = normalize_candidate_name(dem_candidate_raw)
+                dem_candidate = name_corrections.get(dem_candidate, dem_candidate)
             else:
                 dem_rows = county_df[county_df['party'].str.upper().str.contains('DEM') & county_df['candidate'].notna() & (county_df['candidate'] != '')]
                 dem_candidate = normalize_candidate_name(dem_rows.sort_values('votes', ascending=False)['candidate'].iloc[0]) if not dem_rows.empty else ''
             rep_candidates = county_df[rep_mask & county_df['candidate'].notna() & (county_df['candidate'] != '')]
             if not rep_candidates.empty:
-                rep_candidate = normalize_candidate_name(rep_candidates.sort_values('votes', ascending=False)['candidate'].iloc[0])
+                rep_candidate_raw = rep_candidates.sort_values('votes', ascending=False)['candidate'].iloc[0]
+                rep_candidate = normalize_candidate_name(rep_candidate_raw)
+                rep_candidate = name_corrections.get(rep_candidate, rep_candidate)
             else:
                 rep_rows = county_df[county_df['party'].str.upper().str.contains('REP') & county_df['candidate'].notna() & (county_df['candidate'] != '')]
                 rep_candidate = normalize_candidate_name(rep_rows.sort_values('votes', ascending=False)['candidate'].iloc[0]) if not rep_rows.empty else ''
